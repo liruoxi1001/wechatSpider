@@ -73,4 +73,6 @@ for msg in app_msg_list:
             info_list.append(info)
 # save as csv
 with open("wechatResult.csv", "w", encoding='utf-8') as file:
+    csv_writer = csv.writer(file)
+    csv_writer.writerow(['id', 'title', 'link', 'time'])
     file.writelines("\n".join(info_list))
