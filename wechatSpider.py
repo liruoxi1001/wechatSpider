@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import requests
 import time
+import random
 import csv
 import pandas as pd
 
@@ -13,44 +14,61 @@ headers = {
               "ua_id=dzp6ksAj5d0A6R7AAAAAAGhnwYBzvBgqoFz5s8Ry7qM=; pgv_pvi=2762249216; mm_lang=zh_CN; iip=0; "
               "ptui_loginuin=769489918; RK=IczleoICZb; "
               "ptcz=4a74ba8757b457d0e0fce1f3a8e5b51c7dcd5e818fd2ba77e0eaa6b9a6faf5da; "
-              "openid2ticket_ohqJuwOiHcvpjR6eqdRhfdKhIsF8=1HqAUhwJd2Gx+rIt+hFI/5LDZbbGsmj1dDPmTb6x3Yc=; rewardsn=; "
-              "wxtokenkey=777; pgv_si=s4511147008; uuid=074779bbc71d53546c3a98c187cef878; "
-              "rand_info=CAESIESJ5E7MV0XrPYoCYyXAX1oPvnVEvY9vfDOrTQVvaeDN; slave_bizuin=3229474268; "
+              "openid2ticket_ohqJuwOiHcvpjR6eqdRhfdKhIsF8=1HqAUhwJd2Gx+rIt+hFI/5LDZbbGsmj1dDPmTb6x3Yc=; "
+              "pgv_info=ssid=s2282489700; pgv_si=s1788276736; uuid=0c3d564822a44282b4d202e17818a534; "
+              "rand_info=CAESIKainzTr1vv8NCxK4hm3zuq8fY+jx3PkQocQqoUniVW6; slave_bizuin=3229474268; "
               "data_bizuin=3228476038; bizuin=3229474268; "
-              "data_ticket=8vYbuvWBiNtLzRz3TB3qEY6y2LV7ydEb/mF2wvyYmxp8rrws2arymv3IEE8Uq0rD; "
-              "slave_sid"
-              "=MGRVX1FhX1hNa2gzOFhfc1phMXJXeFpxSTdDQWpHeElpdmt0a21UZDh1Y2UzV2RmcThXRks0OTlaUjJBeVJXclNpbzVJNnZyd0NZUm1SRkJ3UjFOek9SQkI2amIzTlYxeGlMSUVLeFJUVUg3Q3FGMTN5NjRRVTFPcUpOdlc4VzFjZmFCaWViN3ZnakNpMEF1; slave_user=gh_bf104cd2a246; xid=180ea26d69c4d41d2c4ce86fe576eea3",
+              "data_ticket=zs9gIaZwpEXH7pRpqycvj00CJZACUKqSJxMj1xLbEJGs8rKhMDaeAGRWAx595IZG; "
+              "slave_sid=ZERpM0F6NVZVM2o3TUF4X0pEdW5nN1dMMEdNeFhPbGFjeEVmUVlxTHRua0VGeE5zZGh5dlVhVnB1YjcxdGtlNmtIRjg1b3VnNUVCS3RZWG9KWXdfc01ndGxtWHI1R1hIQmU1Tk94NTBJWVBQWGtnRjltMXZBSjdPY1dOdzZyZks5QkVmSzhiZDJHbjZ0V0Ix; slave_user=gh_bf104cd2a246; xid=dfb1ebf0ac942cf29f8f89e822cbd1d0",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                   "Chrome/62.0.3202.62 "
                   "Safari/537.36",
 }
 data = {
-    "token": "460167267",
+    "token": "614974149",
     "lang": "zh_CN",
     "f": "json",
     "ajax": "1",
     "action": "list_ex",
     "begin": "0",
     "count": "5",
-    "query": "",
-    "fakeid": "MzI3ODY4NTA0NA==",
+    "query": "区块链100分",
+    "fakeid": "MzUxMDE1NjQ1Ng==",
     "type": "9",
 }
-content_list = []
 
-# 爬取 i 页
-for i in range(20):
-    data["begin"] = i * 5
-    time.sleep(3)
-    # 使用get方法进行提交
-    content_json = requests.get(url, headers=headers, params=data).json()
-    # 返回了一个json，里面是每一页的数据
-    for item in content_json["app_msg_list"]:
-        # 提取每页文章的标题及对应的url
-        items = [item["title"], item["link"]]
-        content_list.append(items)
-    print("第" + str(i + 1) + "页爬取成功")
-name = ['title', 'link']
-test = pd.DataFrame(columns=name, data=content_list)
-test.to_csv("wechatResult.csv", mode='w', encoding='utf-8')
-print("保存成功")
+# 存放结果
+app_msg_list = []
+# 在不知道公众号有多少文章的情况下，使用while语句
+# 也方便重新运行时设置页数
+i = 0
+while True:
+    begin = i * 5
+    data["begin"] = str(begin)
+    # 随机暂停几秒，避免过快的请求导致过快地被查到
+    time.sleep(random.randint(1, 10))
+    resp = requests.get(url, headers=headers, params=data, verify=False)
+    print('第' + str(i + 1) + '页爬取成功')
+    # 微信流量控制, 退出
+    if resp.json()['base_resp']['ret'] == 200013:
+        print("frequencey control, stop at {}".format(str(begin)))
+        break
+
+    # 如果返回的内容中为空则结束
+    if len(resp.json()['app_msg_list']) == 0:
+        print("all ariticle parsed")
+        break
+
+    app_msg_list.append(resp.json())
+    # 翻页
+    i += 1
+
+info_list = []
+for msg in app_msg_list:
+    if "app_msg_list" in msg:
+        for item in msg["app_msg_list"]:
+            info = '"{}","{}","{}","{}"'.format(str(item["aid"]), item['title'], item['link'], str(item['create_time']))
+            info_list.append(info)
+# save as csv
+with open("wechatResult.csv", "w", encoding='utf-8') as file:
+    file.writelines("\n".join(info_list))
