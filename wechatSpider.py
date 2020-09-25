@@ -68,6 +68,8 @@ for msg in app_msg_list:
     if "app_msg_list" in msg:
         for item in msg["app_msg_list"]:
             info = '"{}","{}","{}","{}"'.format(str(item["aid"]), item['title'], item['link'], str(item['create_time']))
+            info = info.replace('<em>', '')
+            info = info.replace('</em>', '')
             info_list.append(info)
 # save as csv
 with open("wechatResult.csv", "w", encoding='utf-8') as file:
